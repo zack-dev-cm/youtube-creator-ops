@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 ARTIFACT_FIELDS = ("screenshot", "snapshot_json", "console_log", "video_proof")
+ASSET_FIELDS = ("video_file", "description_file", "thumbnail_file")
 
 
 def add_finding(findings: list[dict], severity: str, code: str, message: str, step_id: str = "") -> None:
@@ -20,6 +21,10 @@ def load_manifest(path: Path) -> dict:
 
 def is_absolute_or_private(path_text: str) -> bool:
     return path_text.startswith("/") or path_text.startswith("~") or ":\\" in path_text or path_text.startswith("file://")
+
+
+def display_path_label(path: Path) -> str:
+    return path.name or "."
 
 
 def main() -> int:
@@ -51,6 +56,16 @@ def main() -> int:
         add_finding(findings, "warning", "missing-video-file", "Video file path is not recorded.")
     if not assets.get("title"):
         add_finding(findings, "warning", "missing-title", "Planned title is not recorded.")
+    for field in ASSET_FIELDS:
+        asset_path = str(assets.get(field, "")).strip()
+        if not asset_path:
+            continue
+        if is_absolute_or_private(asset_path):
+            add_finding(findings, "error", "absolute-asset-path", f"{field} uses an absolute or private path.")
+            continue
+        candidate = repo_root / asset_path
+        if not candidate.exists():
+            add_finding(findings, "warning", "missing-asset", f"{field} path does not exist under repo root: {asset_path}")
 
     steps = payload.get("steps", [])
     if not steps:
@@ -90,8 +105,8 @@ def main() -> int:
     errors = sum(1 for finding in findings if finding["severity"] == "error")
     warnings = sum(1 for finding in findings if finding["severity"] == "warning")
     report = {
-        "manifest": str(manifest_path),
-        "repo_root": str(repo_root),
+        "manifest": display_path_label(manifest_path),
+        "repo_root": display_path_label(repo_root),
         "status": "ok" if errors == 0 else "fix_required",
         "errors": errors,
         "warnings": warnings,

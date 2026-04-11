@@ -12,6 +12,19 @@ def load_manifest(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def is_absolute_or_private(path_text: str) -> bool:
+    return path_text.startswith("/") or path_text.startswith("~") or ":\\" in path_text or path_text.startswith("file://")
+
+
+def safe_display_path(path_text: str) -> str:
+    value = path_text.strip()
+    if not value:
+        return "n/a"
+    if is_absolute_or_private(value):
+        return "[redacted-private-path]"
+    return value
+
+
 def format_artifacts(artifacts: dict[str, str]) -> list[str]:
     labels = {
         "screenshot": "screenshot",
@@ -55,10 +68,10 @@ def main() -> int:
         f"- Visibility: {run.get('visibility', '')}",
         f"- Audience: {run.get('audience', '')}",
         f"- Studio URL: {run.get('target_url', '')}",
-        f"- Video file: {assets.get('video_file', '') or 'n/a'}",
+        f"- Video file: {safe_display_path(assets.get('video_file', ''))}",
         f"- Title: {assets.get('title', '') or 'n/a'}",
-        f"- Description file: {assets.get('description_file', '') or 'n/a'}",
-        f"- Thumbnail file: {assets.get('thumbnail_file', '') or 'n/a'}",
+        f"- Description file: {safe_display_path(assets.get('description_file', ''))}",
+        f"- Thumbnail file: {safe_display_path(assets.get('thumbnail_file', ''))}",
         f"- Overall status: **{summary.get('status', 'unknown')}**",
         f"- Passed / Failed / Blocked: {summary.get('passed_steps', 0)} / {summary.get('failed_steps', 0)} / {summary.get('blocked_steps', 0)}",
         f"- Published URL: {summary.get('published_url', '') or 'n/a'}",

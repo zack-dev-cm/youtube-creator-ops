@@ -49,7 +49,7 @@ It assumes the browser profile is already authenticated.
 
 5. Check the bundle before sharing it.
    - Use `python3 {baseDir}/scripts/check_youtube_creator_bundle.py --manifest <json> --repo-root <repo> --out <json>`.
-   - Fix missing screenshots, incomplete failed steps, or absolute artifact paths before final handoff.
+   - Fix missing screenshots, incomplete failed steps, or private/absolute asset paths before final handoff.
 
 6. Render the report.
    - Use `python3 {baseDir}/scripts/render_youtube_creator_report.py --manifest <json> --out <md>`.
