@@ -22,8 +22,9 @@ jobs:
       - name: Smoke test bundle flow
         run: |
           rm -rf /tmp/youtube-creator-ops-smoke
-          mkdir -p /tmp/youtube-creator-ops-smoke/artifacts
+          mkdir -p /tmp/youtube-creator-ops-smoke/artifacts /tmp/youtube-creator-ops-smoke/assets
           : > /tmp/youtube-creator-ops-smoke/artifacts/studio-home.png
+          : > /tmp/youtube-creator-ops-smoke/assets/demo-short.mp4
           python3 skill/youtube-creator-ops/scripts/init_youtube_creator_run.py \
             --out /tmp/youtube-creator-ops-smoke/run.json \
             --run-id demo-short \
