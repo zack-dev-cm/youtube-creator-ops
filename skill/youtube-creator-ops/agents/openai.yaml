@@ -1,0 +1,4 @@
+interface:
+  display_name: "YouTube Creator Ops"
+  short_description: "Plan, stage, execute, and verify a YouTube Shorts run through OpenClaw with one reusable bundle"
+  default_prompt: "Use $youtube-creator-ops to initialize a YouTube Shorts run, append evidence-backed steps, check the bundle, and render a markdown report I can share."
