@@ -49,7 +49,7 @@ python3 skill/youtube-creator-ops/scripts/render_youtube_creator_report.py \
 - one machine-readable run manifest for YouTube Studio publishes
 - evidence-backed step logging for upload, checks, metadata, publish, and verification
 - bundle validation for missing failure detail, missing screenshots, and private or absolute asset paths
-- a shareable markdown report for launch review, debugging, or handoff
+- a shareable markdown report for launch review, debugging, or handoff, with private paths and non-public URLs redacted
 
 ## Included
 

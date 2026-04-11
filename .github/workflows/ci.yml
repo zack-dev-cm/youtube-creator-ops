@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile scripts
+        run: python3 -m py_compile skill/youtube-creator-ops/scripts/*.py
+
+      - name: Smoke test bundle flow
+        run: |
+          rm -rf /tmp/youtube-creator-ops-smoke
+          mkdir -p /tmp/youtube-creator-ops-smoke/artifacts
+          : > /tmp/youtube-creator-ops-smoke/artifacts/studio-home.png
+          python3 skill/youtube-creator-ops/scripts/init_youtube_creator_run.py \
+            --out /tmp/youtube-creator-ops-smoke/run.json \
+            --run-id demo-short \
+            --channel "Demo Channel" \
+            --goal "Publish one Shorts test clip" \
+            --browser-profile creator-main \
+            --kind short \
+            --stage dry_run \
+            --visibility unlisted \
+            --video-file assets/demo-short.mp4 \
+            --title "Demo Shorts publish" \
+            --surface upload \
+            --surface checks \
+            --surface publish
+          python3 skill/youtube-creator-ops/scripts/append_youtube_creator_step.py \
+            --manifest /tmp/youtube-creator-ops-smoke/run.json \
+            --step-id open-studio \
+            --surface upload \
+            --action "Open YouTube Studio upload flow" \
+            --expected "Studio loads with upload controls visible" \
+            --actual "Studio loaded normally" \
+            --status passed \
+            --screenshot artifacts/studio-home.png
+          python3 skill/youtube-creator-ops/scripts/check_youtube_creator_bundle.py \
+            --manifest /tmp/youtube-creator-ops-smoke/run.json \
+            --repo-root /tmp/youtube-creator-ops-smoke \
+            --out /tmp/youtube-creator-ops-smoke/check.json
+          python3 skill/youtube-creator-ops/scripts/render_youtube_creator_report.py \
+            --manifest /tmp/youtube-creator-ops-smoke/run.json \
+            --out /tmp/youtube-creator-ops-smoke/report.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          check = json.loads(Path("/tmp/youtube-creator-ops-smoke/check.json").read_text())
+          assert check["status"] == "ok", check
+          assert check["errors"] == 0, check
+          assert check["warnings"] == 0, check
+          report = Path("/tmp/youtube-creator-ops-smoke/report.md").read_text()
+          assert "YouTube Creator Run Report" in report, report
+          assert "demo-short" in report, report
+          PY
