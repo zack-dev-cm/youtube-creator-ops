@@ -50,7 +50,7 @@ It assumes the browser profile is already authenticated.
    - Switch to `live` only when the user wants the run to reach a public or unlisted post.
 
 4. Pause for manual auth if needed.
-   - If YouTube shows CAPTCHA, passkey, login, or 2FA, stop the automated step log and let the operator complete it in the same browser profile.
+   - If YouTube shows CAPTCHA, passkey, login, or 2FA, stop the automated step log and let the user complete it in the same browser profile.
    - Resume only after the authenticated Studio session is back.
 
 5. Check the bundle before sharing it.
