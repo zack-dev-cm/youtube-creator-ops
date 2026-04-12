@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append one evidence-backed step to a YouTube publish manifest."""
+"""Append one publish step to a YouTube publish manifest."""
 
 from __future__ import annotations
 

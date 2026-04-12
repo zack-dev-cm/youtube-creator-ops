@@ -1,10 +1,14 @@
-# YouTube Creator Ops
+# OpenClaw YouTube Publisher
 
-**Plan, stage, publish, and verify a YouTube Shorts run through OpenClaw with one reusable run bundle.**
+**Publish a YouTube Short through a logged-in OpenClaw browser profile and export a reusable run report.**
 
-YouTube Creator Ops is a small public OpenClaw skill for YouTube publishing runs. It creates a
-machine-readable run manifest, records publish steps with evidence, checks the resulting bundle, and
-renders a shareable markdown report for launch review or debugging.
+OpenClaw YouTube Publisher is a public OpenClaw skill for repeatable YouTube Studio publishing. It
+creates a machine-readable run manifest, records upload and publish steps, checks the resulting
+bundle, and renders a shareable markdown report for review or debugging.
+
+## Reference Short URL
+
+- [Reference short from adjacent pipeline](https://www.youtube.com/shorts/_5dVaQdB1lA). This repo covers the browser publishing workflow and run report, not media generation.
 
 ## Quick Start
 
@@ -47,9 +51,9 @@ python3 skill/youtube-creator-ops/scripts/render_youtube_creator_report.py \
 ## What It Covers
 
 - one machine-readable run manifest for YouTube Studio publishes
-- evidence-backed step logging for upload, checks, metadata, publish, and verification
+- step logging for upload, checks, metadata, publish, and verification
 - bundle validation for missing failure detail, missing screenshots, and private or absolute asset paths
-- a shareable markdown report for launch review, debugging, or handoff, with private paths and non-public URLs redacted
+- a shareable markdown report for review or debugging, with private paths and non-public URLs redacted
 
 ## Included
 
@@ -65,7 +69,7 @@ python3 skill/youtube-creator-ops/scripts/render_youtube_creator_report.py \
 - publish a YouTube Short through a logged-in OpenClaw browser profile
 - keep one auditable record of title, visibility, checks, publish outcome, and public URL
 - debug a failed Studio flow with screenshots and step-by-step evidence instead of chat notes
-- hand a publishing run to another operator without rewriting the workflow from memory
+- repeat or review a publishing run without rebuilding the checklist from memory
 
 ## License
 

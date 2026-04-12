@@ -1,16 +1,17 @@
 ---
 name: youtube-creator-ops
-description: Public OpenClaw skill for planning, staging, executing, and verifying a YouTube Shorts publish run through a logged-in browser profile with one reusable evidence bundle.
+description: Public OpenClaw skill for publishing a YouTube Short through a logged-in browser profile and generating a reusable run report.
 homepage: https://github.com/zack-dev-cm/youtube-creator-ops
 user-invocable: true
 metadata: {"openclaw":{"homepage":"https://github.com/zack-dev-cm/youtube-creator-ops","skillKey":"youtube-creator-ops","requires":{"anyBins":["python3","python"]}}}
 ---
 
-# YouTube Creator Ops
+# OpenClaw YouTube Publisher
 
 ## Goal
 
-Turn one YouTube Shorts publish run into a reusable artifact bundle:
+Use OpenClaw to publish a YouTube Short in a logged-in browser session and save a reusable record
+of the run:
 
 - one machine-readable run manifest
 - one ordered publish log with screenshots and URLs
@@ -20,13 +21,18 @@ Turn one YouTube Shorts publish run into a reusable artifact bundle:
 This skill is for YouTube Studio publishing through OpenClaw.
 It assumes the browser profile is already authenticated.
 
+## Public Example URL
+
+- Related short example: https://www.youtube.com/shorts/_5dVaQdB1lA
+- Use it as a reference for the final public URL shape. The repo does not claim to generate the video asset itself.
+
 ## Use This Skill When
 
 - the user wants to publish a YouTube Short through OpenClaw
 - you need one clean record of upload, checks, visibility, and final URL
 - the same YouTube Studio workflow keeps getting repeated from memory
-- a failed publish needs screenshots, expected-versus-actual steps, and a handoff report
-- the run should stay operator-visible instead of hidden background automation
+- a failed publish needs screenshots, expected-versus-actual steps, and a reusable report
+- the run should stay visible instead of hidden background automation
 
 ## Quick Start
 
@@ -41,15 +47,15 @@ It assumes the browser profile is already authenticated.
 
 3. Default to `dry_run`.
    - Keep the manifest in `dry_run` stage until the final publish click is intentionally approved.
-   - Switch to `live` only when the operator wants the run to reach a public or unlisted post.
+   - Switch to `live` only when the user wants the run to reach a public or unlisted post.
 
-4. Pause for operator-owned auth if needed.
+4. Pause for manual auth if needed.
    - If YouTube shows CAPTCHA, passkey, login, or 2FA, stop the automated step log and let the operator complete it in the same browser profile.
    - Resume only after the authenticated Studio session is back.
 
 5. Check the bundle before sharing it.
    - Use `python3 {baseDir}/scripts/check_youtube_creator_bundle.py --manifest <json> --repo-root <repo> --out <json>`.
-   - Fix missing screenshots, incomplete failed steps, or private/absolute asset paths before final handoff.
+   - Fix missing screenshots, incomplete failed steps, or private/absolute asset paths before sharing the bundle.
 
 6. Render the report.
    - Use `python3 {baseDir}/scripts/render_youtube_creator_report.py --manifest <json> --out <md>`.
@@ -61,9 +67,9 @@ It assumes the browser profile is already authenticated.
 ### Profile rules
 
 - Use a logged-in browser profile dedicated to the publishing context when possible.
-- Do not claim a run is autonomous if login, CAPTCHA, passkey, or 2FA still requires operator action.
-- Keep the publish run in one visible operator-controlled browser session.
-- Treat the final publish click as a deliberate operator-approved action, even when the earlier steps are automated.
+- Do not claim a run is autonomous if login, CAPTCHA, passkey, or 2FA still requires a manual step.
+- Keep the publish run in one visible browser session.
+- Treat the final publish click as a deliberate user-approved action, even when the earlier steps are automated.
 
 ### Publish rules
 
@@ -83,8 +89,8 @@ It assumes the browser profile is already authenticated.
 - `scripts/init_youtube_creator_run.py`
   - Create a machine-readable manifest for one YouTube publish run.
 - `scripts/append_youtube_creator_step.py`
-  - Append one evidence-backed step to the publish manifest.
+  - Append one publish step to the manifest.
 - `scripts/check_youtube_creator_bundle.py`
-  - Validate the resulting run bundle before handoff or release review.
+  - Validate the resulting run bundle before sharing or final review.
 - `scripts/render_youtube_creator_report.py`
   - Render a concise markdown report from the publish manifest.

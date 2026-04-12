@@ -64,6 +64,6 @@ jobs:
           assert check["errors"] == 0, check
           assert check["warnings"] == 0, check
           report = Path("/tmp/youtube-creator-ops-smoke/report.md").read_text()
-          assert "YouTube Creator Run Report" in report, report
+          assert "OpenClaw YouTube Publish Report" in report, report
           assert "demo-short" in report, report
           PY

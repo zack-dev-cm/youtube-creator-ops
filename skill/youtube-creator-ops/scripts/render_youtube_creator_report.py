@@ -74,7 +74,7 @@ def main() -> int:
     steps = payload.get("steps", [])
 
     lines = [
-        "# YouTube Creator Run Report",
+        "# OpenClaw YouTube Publish Report",
         "",
         f"- Run: `{run.get('run_id', '')}`",
         f"- Channel: {run.get('channel', '')}",
