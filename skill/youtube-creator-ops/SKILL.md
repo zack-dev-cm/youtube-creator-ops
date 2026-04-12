@@ -59,7 +59,7 @@ It assumes the browser profile is already authenticated.
 
 6. Render the report.
    - Use `python3 {baseDir}/scripts/render_youtube_creator_report.py --manifest <json> --out <md>`.
-   - The default report keeps only public YouTube URLs and redacts private artifact paths.
+   - The default report keeps only public YouTube URLs and redacts browser profile labels, private artifact paths, and non-public URLs found inside step text.
    - Share the report instead of loose screenshots and chat fragments.
 
 ## Operating Rules

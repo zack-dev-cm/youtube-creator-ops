@@ -5,8 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
+
+SECRET_PATTERNS = (
+    re.compile(r"github_pat_[A-Za-z0-9_]{20,}", re.IGNORECASE),
+    re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}", re.IGNORECASE),
+    re.compile(r"sk-[A-Za-z0-9]{20,}", re.IGNORECASE),
+    re.compile(r"AIza[0-9A-Za-z\\-_]{20,}"),
+    re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}", re.IGNORECASE),
+    re.compile(r"Bearer\\s+[A-Za-z0-9._-]{10,}", re.IGNORECASE),
+)
+URL_PATTERN = re.compile(r"https?://[^\s<>()\"']+")
 
 
 def load_manifest(path: Path) -> dict:
@@ -26,7 +37,7 @@ def safe_display_path(path_text: str) -> str:
     return value
 
 
-def safe_youtube_url(url: str) -> str:
+def safe_public_url(url: str) -> str:
     value = url.strip()
     if not value:
         return "n/a"
@@ -37,9 +48,32 @@ def safe_youtube_url(url: str) -> str:
     host = (parts.hostname or "").lower()
     if parts.scheme != "https":
         return "[redacted-private-url]"
-    if host == "youtu.be" or host.endswith(".youtube.com") or host == "youtube.com":
+    if host == "youtu.be":
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    if host in {"youtube.com", "www.youtube.com", "m.youtube.com"} and (
+        parts.path == "/watch" or parts.path.startswith("/shorts/")
+    ):
         return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
     return "[redacted-private-url]"
+
+
+def redact_secret_like_text(value: str) -> str:
+    output = value
+    for pattern in SECRET_PATTERNS:
+        output = pattern.sub("[redacted-secret-like-value]", output)
+    return output
+
+
+def sanitize_text(value: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "n/a"
+    text = redact_secret_like_text(text)
+    return URL_PATTERN.sub(lambda match: safe_public_url(match.group(0)), text)
+
+
+def safe_browser_profile(value: str) -> str:
+    return "[redacted-browser-profile]" if str(value or "").strip() else "n/a"
 
 
 def format_artifacts(artifacts: dict[str, str]) -> list[str]:
@@ -77,21 +111,21 @@ def main() -> int:
         "# OpenClaw YouTube Publish Report",
         "",
         f"- Run: `{run.get('run_id', '')}`",
-        f"- Channel: {run.get('channel', '')}",
-        f"- Goal: {run.get('goal', '')}",
-        f"- Browser profile: {run.get('browser_profile', '') or 'n/a'}",
+        f"- Channel: {sanitize_text(run.get('channel', ''))}",
+        f"- Goal: {sanitize_text(run.get('goal', ''))}",
+        f"- Browser profile: {safe_browser_profile(run.get('browser_profile', ''))}",
         f"- Kind: {run.get('kind', '')}",
         f"- Stage: {run.get('stage', '')}",
         f"- Visibility: {run.get('visibility', '')}",
         f"- Audience: {run.get('audience', '')}",
-        f"- Studio URL: {safe_youtube_url(run.get('target_url', ''))}",
+        f"- Studio URL: {safe_public_url(run.get('target_url', ''))}",
         f"- Video file: {safe_display_path(assets.get('video_file', ''))}",
-        f"- Title: {assets.get('title', '') or 'n/a'}",
+        f"- Title: {sanitize_text(assets.get('title', ''))}",
         f"- Description file: {safe_display_path(assets.get('description_file', ''))}",
         f"- Thumbnail file: {safe_display_path(assets.get('thumbnail_file', ''))}",
         f"- Overall status: **{summary.get('status', 'unknown')}**",
         f"- Passed / Failed / Blocked: {summary.get('passed_steps', 0)} / {summary.get('failed_steps', 0)} / {summary.get('blocked_steps', 0)}",
-        f"- Published URL: {safe_youtube_url(summary.get('published_url', ''))}",
+        f"- Published URL: {safe_public_url(summary.get('published_url', ''))}",
         "",
         "## Steps",
         "",
@@ -99,17 +133,17 @@ def main() -> int:
 
     for index, step in enumerate(steps, start=1):
         lines.append(f"### {index}. {step.get('step_id', f'step-{index}')}")
-        lines.append(f"- Surface: {step.get('surface', '') or 'n/a'}")
+        lines.append(f"- Surface: {sanitize_text(step.get('surface', ''))}")
         lines.append(f"- Status: **{step.get('status', 'unknown')}**")
-        lines.append(f"- Action: {step.get('action', '')}")
-        lines.append(f"- Expected: {step.get('expected', '')}")
-        lines.append(f"- Actual: {step.get('actual', '')}")
+        lines.append(f"- Action: {sanitize_text(step.get('action', ''))}")
+        lines.append(f"- Expected: {sanitize_text(step.get('expected', ''))}")
+        lines.append(f"- Actual: {sanitize_text(step.get('actual', ''))}")
         if step.get("note"):
-            lines.append(f"- Note: {step['note']}")
+            lines.append(f"- Note: {sanitize_text(step['note'])}")
         if step.get("issue_keys"):
-            lines.append(f"- Issue keys: {', '.join(step['issue_keys'])}")
+            lines.append(f"- Issue keys: {sanitize_text(', '.join(step['issue_keys']))}")
         if step.get("published_url"):
-            lines.append(f"- Published URL: {safe_youtube_url(step['published_url'])}")
+            lines.append(f"- Published URL: {safe_public_url(step['published_url'])}")
         artifact_parts = format_artifacts(step.get("artifacts", {}))
         if artifact_parts:
             lines.append(f"- Artifacts: {'; '.join(artifact_parts)}")

@@ -43,10 +43,11 @@ jobs:
             --manifest /tmp/youtube-creator-ops-smoke/run.json \
             --step-id open-studio \
             --surface upload \
-            --action "Open YouTube Studio upload flow" \
+            --action "Open https://studio.youtube.com/channel/abc?utm=private upload flow" \
             --expected "Studio loads with upload controls visible" \
-            --actual "Studio loaded normally" \
+            --actual "Studio loaded normally via https://studio.youtube.com/channel/abc?utm=private" \
             --status passed \
+            --note "Do not share https://internal.example.com/review?token=abc123 or github_pat_abcdefghijklmnopqrstuvwxyz" \
             --screenshot artifacts/studio-home.png
           python3 skill/youtube-creator-ops/scripts/check_youtube_creator_bundle.py \
             --manifest /tmp/youtube-creator-ops-smoke/run.json \
@@ -60,10 +61,13 @@ jobs:
           from pathlib import Path
 
           check = json.loads(Path("/tmp/youtube-creator-ops-smoke/check.json").read_text())
-          assert check["status"] == "ok", check
-          assert check["errors"] == 0, check
-          assert check["warnings"] == 0, check
+          assert check["status"] == "fix_required", check
+          assert check["errors"] == 1, check
+          assert check["warnings"] == 3, check
           report = Path("/tmp/youtube-creator-ops-smoke/report.md").read_text()
           assert "OpenClaw YouTube Publish Report" in report, report
           assert "demo-short" in report, report
+          assert "[redacted-browser-profile]" in report, report
+          assert "[redacted-private-url]" in report, report
+          assert "[redacted-secret-like-value]" in report, report
           PY

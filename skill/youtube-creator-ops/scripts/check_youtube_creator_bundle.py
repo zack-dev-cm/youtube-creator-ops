@@ -5,10 +5,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 ARTIFACT_FIELDS = ("screenshot", "snapshot_json", "console_log", "video_proof")
 ASSET_FIELDS = ("video_file", "description_file", "thumbnail_file")
+STEP_TEXT_FIELDS = ("action", "expected", "actual", "note")
+SECRET_PATTERNS = (
+    re.compile(r"github_pat_[A-Za-z0-9_]{20,}", re.IGNORECASE),
+    re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}", re.IGNORECASE),
+    re.compile(r"sk-[A-Za-z0-9]{20,}", re.IGNORECASE),
+    re.compile(r"AIza[0-9A-Za-z\\-_]{20,}"),
+    re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}", re.IGNORECASE),
+    re.compile(r"Bearer\\s+[A-Za-z0-9._-]{10,}", re.IGNORECASE),
+)
+URL_PATTERN = re.compile(r"https?://[^\s<>()\"']+")
 
 
 def add_finding(findings: list[dict], severity: str, code: str, message: str, step_id: str = "") -> None:
@@ -25,6 +37,38 @@ def is_absolute_or_private(path_text: str) -> bool:
 
 def display_path_label(path: Path) -> str:
     return path.name or "."
+
+
+def safe_public_url(url: str) -> str:
+    value = url.strip()
+    if not value:
+        return "n/a"
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return "[redacted-private-url]"
+    host = (parts.hostname or "").lower()
+    if parts.scheme != "https":
+        return "[redacted-private-url]"
+    if host == "youtu.be":
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    if host in {"youtube.com", "www.youtube.com", "m.youtube.com"} and (
+        parts.path == "/watch" or parts.path.startswith("/shorts/")
+    ):
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    return "[redacted-private-url]"
+
+
+def has_secret_like_text(value: str) -> bool:
+    return any(pattern.search(value) for pattern in SECRET_PATTERNS)
+
+
+def has_private_or_query_url(value: str) -> bool:
+    for match in URL_PATTERN.finditer(value):
+        raw = match.group(0)
+        if safe_public_url(raw) != raw:
+            return True
+    return False
 
 
 def main() -> int:
@@ -79,6 +123,26 @@ def main() -> int:
             add_finding(findings, "error", "missing-expected", "Step is missing expected behavior.", step_id)
         if not step.get("actual"):
             add_finding(findings, "error", "missing-actual", "Step is missing actual behavior.", step_id)
+        for field in STEP_TEXT_FIELDS:
+            text_value = str(step.get(field, "") or "").strip()
+            if not text_value:
+                continue
+            if has_private_or_query_url(text_value):
+                add_finding(
+                    findings,
+                    "warning",
+                    "private-step-url",
+                    f"{field} contains a private or query URL that will be redacted in the shareable report.",
+                    step_id,
+                )
+            if has_secret_like_text(text_value):
+                add_finding(
+                    findings,
+                    "error",
+                    "secret-like-step-text",
+                    f"{field} contains secret-like text that should be removed before sharing the bundle.",
+                    step_id,
+                )
 
         status = step.get("status")
         if status not in {"passed", "failed", "blocked"}:
