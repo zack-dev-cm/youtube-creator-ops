@@ -14,6 +14,7 @@ Use OpenClaw to publish a YouTube Short in a logged-in browser session and save 
 of the run:
 
 - one machine-readable run manifest
+- one structured provenance block for sources such as Midjourney, Suno, or local editors
 - one ordered publish log with screenshots and URLs
 - one structural bundle check
 - one shareable markdown report
@@ -29,6 +30,7 @@ It assumes the browser profile is already authenticated.
 ## Use This Skill When
 
 - the user wants to publish a YouTube Short through OpenClaw
+- the short was assembled from Midjourney visuals, Suno audio, or local edits and that provenance should stay in the same bundle
 - you need one clean record of upload, checks, visibility, and final URL
 - the same YouTube Studio workflow keeps getting repeated from memory
 - a failed publish needs screenshots, expected-versus-actual steps, and a reusable report
@@ -38,7 +40,14 @@ It assumes the browser profile is already authenticated.
 
 1. Initialize the run manifest.
    - Use `python3 {baseDir}/scripts/init_youtube_creator_run.py --out <json> --run-id <id> --channel <channel> --goal <goal>`.
-   - Add `--browser-profile`, `--stage dry_run|live`, `--visibility`, `--video-file`, `--title`, and repeatable `--surface` fields.
+   - Add `--browser-profile`, `--stage dry_run|live`, `--visibility`, `--video-file`, `--title`, repeatable `--asset-source`, repeatable `--provenance`, and repeatable `--surface` fields.
+   - Recommended asset source labels:
+     - `visual:midjourney:<job-or-board>`
+     - `audio:suno:<track-or-project>`
+     - `edit:<tool>:<timeline-or-export>`
+   - Recommended structured provenance JSON:
+     - `{"role":"visual","provider":"midjourney","asset_id":"job-123","source_url":"https://midjourney.com/jobs/job-123","prompt_ref":"board-a","model":"v7","license":"internal-review","public_credits_required":false}`
+     - `{"role":"audio","provider":"suno","asset_id":"track-04","source_url":"https://suno.com/song/track-04","prompt_ref":"chorus-a","model":"v4","license":"creator-plan","attribution_text":"Music draft from Suno.","public_credits_required":true}`
 
 2. Execute the YouTube Studio flow through OpenClaw.
    - Open the Studio page in a logged-in profile.
@@ -59,7 +68,7 @@ It assumes the browser profile is already authenticated.
 
 6. Render the report.
    - Use `python3 {baseDir}/scripts/render_youtube_creator_report.py --manifest <json> --out <md>`.
-   - The default report keeps only public YouTube URLs and redacts browser profile labels, private artifact paths, and non-public URLs found inside step text.
+   - The default report keeps only public YouTube, Midjourney, and Suno URLs and redacts browser profile labels, private artifact paths, and non-public URLs found inside step text or provenance notes.
    - Share the report instead of loose screenshots and chat fragments.
 
 ## Operating Rules
@@ -76,6 +85,8 @@ It assumes the browser profile is already authenticated.
 - Record expected result and actual result for every step that matters.
 - Capture a screenshot for failed or blocked steps and important checkpoints.
 - Store final published URL when the run succeeds.
+- Record upstream asset provenance when Midjourney, Suno, CapCut, or another editor was part of the content chain.
+- If public credits or attribution are required for Midjourney, Suno, or another provider, keep that text in provenance and make sure the publish metadata includes it where needed.
 - Prefer relative artifact paths so the bundle can move between machines.
 
 ### Safety rules

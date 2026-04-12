@@ -26,6 +26,48 @@ def dedupe(values: list[str]) -> list[str]:
     return out
 
 
+def parse_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    return text in {"1", "true", "yes", "y", "on"}
+
+
+def parse_provenance_entries(values: list[str]) -> list[dict[str, object]]:
+    entries: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for raw in values:
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"Invalid --provenance JSON: {exc.msg}") from exc
+        if not isinstance(payload, dict):
+            raise SystemExit("Each --provenance value must decode to a JSON object.")
+        entry = {
+            "role": str(payload.get("role") or "").strip(),
+            "provider": str(payload.get("provider") or "").strip(),
+            "asset_id": str(payload.get("asset_id") or "").strip(),
+            "source_url": str(payload.get("source_url") or "").strip(),
+            "prompt_ref": str(payload.get("prompt_ref") or "").strip(),
+            "model": str(payload.get("model") or "").strip(),
+            "license": str(payload.get("license") or "").strip(),
+            "attribution_text": str(payload.get("attribution_text") or "").strip(),
+            "public_credits_required": parse_bool(payload.get("public_credits_required")),
+            "notes": str(payload.get("notes") or "").strip(),
+        }
+        if not entry["role"] or not entry["provider"]:
+            raise SystemExit("Each --provenance entry must include non-empty 'role' and 'provider' fields.")
+        key = json.dumps(entry, sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
+        entries.append(entry)
+    return entries
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, help="Output JSON file.")
@@ -41,6 +83,18 @@ def main() -> int:
     parser.add_argument("--title", default="", help="Planned title.")
     parser.add_argument("--description-file", default="", help="Relative path to the description text.")
     parser.add_argument("--thumbnail-file", default="", help="Relative path to the thumbnail asset.")
+    parser.add_argument(
+        "--asset-source",
+        action="append",
+        default=[],
+        help="Repeatable upstream asset source such as visual:midjourney:v7, audio:suno:track-04, or edit:capcut:timeline-a.",
+    )
+    parser.add_argument(
+        "--provenance",
+        action="append",
+        default=[],
+        help="Repeatable JSON object with structured provenance, for example {\"role\":\"visual\",\"provider\":\"midjourney\",\"asset_id\":\"job-123\",\"model\":\"v7\"}.",
+    )
     parser.add_argument("--target-url", default="https://studio.youtube.com/", help="Studio URL.")
     parser.add_argument("--surface", action="append", default=[], help="Repeatable surface name such as upload or publish.")
     parser.add_argument("--tag", action="append", default=[], help="Repeatable tag for grouping runs.")
@@ -50,7 +104,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "run": {
             "run_id": args.run_id.strip(),
@@ -70,7 +124,9 @@ def main() -> int:
             "title": args.title.strip(),
             "description_file": args.description_file.strip(),
             "thumbnail_file": args.thumbnail_file.strip(),
+            "asset_sources": dedupe(args.asset_source),
         },
+        "provenance": parse_provenance_entries(args.provenance),
         "steps": [],
         "summary": {
             "status": "in_progress",

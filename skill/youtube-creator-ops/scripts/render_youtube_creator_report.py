@@ -54,6 +54,8 @@ def safe_public_url(url: str) -> str:
         parts.path == "/watch" or parts.path.startswith("/shorts/")
     ):
         return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    if host in {"midjourney.com", "www.midjourney.com", "suno.com", "www.suno.com", "app.suno.com"}:
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
     return "[redacted-private-url]"
 
 
@@ -91,6 +93,29 @@ def format_artifacts(artifacts: dict[str, str]) -> list[str]:
     return out
 
 
+def format_provenance(entries: list[dict[str, object]]) -> list[str]:
+    lines: list[str] = []
+    for index, entry in enumerate(entries, start=1):
+        lines.append(f"### Provenance {index}: {sanitize_text(entry.get('role', ''))} via {sanitize_text(entry.get('provider', ''))}")
+        if entry.get("asset_id"):
+            lines.append(f"- Asset ID: {sanitize_text(entry['asset_id'])}")
+        if entry.get("model"):
+            lines.append(f"- Model: {sanitize_text(entry['model'])}")
+        if entry.get("prompt_ref"):
+            lines.append(f"- Prompt ref: {sanitize_text(entry['prompt_ref'])}")
+        if entry.get("source_url"):
+            lines.append(f"- Source URL: {safe_public_url(str(entry['source_url']))}")
+        if entry.get("license"):
+            lines.append(f"- License: {sanitize_text(entry['license'])}")
+        lines.append(f"- Public credits required: {'yes' if bool(entry.get('public_credits_required')) else 'no'}")
+        if entry.get("attribution_text"):
+            lines.append(f"- Attribution text: {sanitize_text(entry['attribution_text'])}")
+        if entry.get("notes"):
+            lines.append(f"- Notes: {sanitize_text(entry['notes'])}")
+        lines.append("")
+    return lines
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, help="Run manifest JSON.")
@@ -106,6 +131,7 @@ def main() -> int:
     assets = payload.get("assets", {})
     summary = payload.get("summary", {})
     steps = payload.get("steps", [])
+    provenance = payload.get("provenance", [])
 
     lines = [
         "# OpenClaw YouTube Publish Report",
@@ -126,10 +152,18 @@ def main() -> int:
         f"- Overall status: **{summary.get('status', 'unknown')}**",
         f"- Passed / Failed / Blocked: {summary.get('passed_steps', 0)} / {summary.get('failed_steps', 0)} / {summary.get('blocked_steps', 0)}",
         f"- Published URL: {safe_public_url(summary.get('published_url', ''))}",
-        "",
-        "## Steps",
-        "",
     ]
+
+    for source in assets.get("asset_sources", []):
+        value = str(source or "").strip()
+        if value:
+            lines.append(f"- Asset source: {sanitize_text(value)}")
+
+    if provenance:
+        lines.extend(["", "## Asset Provenance", ""])
+        lines.extend(format_provenance(provenance))
+
+    lines.extend(["", "## Steps", ""])
 
     for index, step in enumerate(steps, start=1):
         lines.append(f"### {index}. {step.get('step_id', f'step-{index}')}")

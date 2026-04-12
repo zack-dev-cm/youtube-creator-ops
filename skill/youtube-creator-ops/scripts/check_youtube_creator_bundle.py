@@ -56,6 +56,8 @@ def safe_public_url(url: str) -> str:
         parts.path == "/watch" or parts.path.startswith("/shorts/")
     ):
         return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    if host in {"midjourney.com", "www.midjourney.com", "suno.com", "www.suno.com", "app.suno.com"}:
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
     return "[redacted-private-url]"
 
 
@@ -69,6 +71,28 @@ def has_private_or_query_url(value: str) -> bool:
         if safe_public_url(raw) != raw:
             return True
     return False
+
+
+def inspect_text_field(findings: list[dict], value: str, field_name: str, step_id: str = "") -> None:
+    text_value = str(value or "").strip()
+    if not text_value:
+        return
+    if has_private_or_query_url(text_value):
+        add_finding(
+            findings,
+            "warning",
+            "private-step-url" if step_id else "private-provenance-url",
+            f"{field_name} contains a private or query URL that will be redacted in the shareable report.",
+            step_id,
+        )
+    if has_secret_like_text(text_value):
+        add_finding(
+            findings,
+            "error",
+            "secret-like-step-text" if step_id else "secret-like-provenance-text",
+            f"{field_name} contains secret-like text that should be removed before sharing the bundle.",
+            step_id,
+        )
 
 
 def main() -> int:
@@ -110,6 +134,22 @@ def main() -> int:
         candidate = repo_root / asset_path
         if not candidate.exists():
             add_finding(findings, "warning", "missing-asset", f"{field} path does not exist under repo root: {asset_path}")
+    for index, source in enumerate(assets.get("asset_sources", []), start=1):
+        source_text = str(source or "").strip()
+        if not source_text:
+            continue
+        source_label = f"asset_sources[{index}]"
+        inspect_text_field(findings, source_text, source_label)
+    for index, entry in enumerate(payload.get("provenance", []), start=1):
+        if not isinstance(entry, dict):
+            add_finding(findings, "error", "invalid-provenance-entry", f"provenance[{index}] must be an object.")
+            continue
+        role = str(entry.get("role") or "").strip()
+        provider = str(entry.get("provider") or "").strip()
+        if not role or not provider:
+            add_finding(findings, "error", "missing-provenance-fields", f"provenance[{index}] must include role and provider.")
+        for field_name in ("asset_id", "source_url", "prompt_ref", "model", "license", "attribution_text", "notes"):
+            inspect_text_field(findings, str(entry.get(field_name, "") or ""), f"provenance[{index}].{field_name}")
 
     steps = payload.get("steps", [])
     if not steps:
@@ -124,25 +164,7 @@ def main() -> int:
         if not step.get("actual"):
             add_finding(findings, "error", "missing-actual", "Step is missing actual behavior.", step_id)
         for field in STEP_TEXT_FIELDS:
-            text_value = str(step.get(field, "") or "").strip()
-            if not text_value:
-                continue
-            if has_private_or_query_url(text_value):
-                add_finding(
-                    findings,
-                    "warning",
-                    "private-step-url",
-                    f"{field} contains a private or query URL that will be redacted in the shareable report.",
-                    step_id,
-                )
-            if has_secret_like_text(text_value):
-                add_finding(
-                    findings,
-                    "error",
-                    "secret-like-step-text",
-                    f"{field} contains secret-like text that should be removed before sharing the bundle.",
-                    step_id,
-                )
+            inspect_text_field(findings, str(step.get(field, "") or ""), field, step_id)
 
         status = step.get("status")
         if status not in {"passed", "failed", "blocked"}:

@@ -36,6 +36,10 @@ jobs:
             --visibility unlisted \
             --video-file assets/demo-short.mp4 \
             --title "Demo Shorts publish" \
+            --asset-source "visual:midjourney:v7-board-123" \
+            --asset-source "audio:suno:track-04" \
+            --provenance '{"role":"visual","provider":"midjourney","asset_id":"job-123","source_url":"https://midjourney.com/jobs/private?id=123","prompt_ref":"board-a","model":"v7","license":"internal-review","public_credits_required":false}' \
+            --provenance '{"role":"audio","provider":"suno","asset_id":"track-04","source_url":"https://suno.com/song/track-04","prompt_ref":"chorus-a","model":"v4","license":"creator-plan","attribution_text":"Music draft from Suno.","public_credits_required":true}' \
             --surface upload \
             --surface checks \
             --surface publish
@@ -63,11 +67,14 @@ jobs:
           check = json.loads(Path("/tmp/youtube-creator-ops-smoke/check.json").read_text())
           assert check["status"] == "fix_required", check
           assert check["errors"] == 1, check
-          assert check["warnings"] == 3, check
+          assert check["warnings"] == 4, check
           report = Path("/tmp/youtube-creator-ops-smoke/report.md").read_text()
           assert "OpenClaw YouTube Publish Report" in report, report
           assert "demo-short" in report, report
           assert "[redacted-browser-profile]" in report, report
           assert "[redacted-private-url]" in report, report
           assert "[redacted-secret-like-value]" in report, report
+          assert "audio:suno:track-04" in report, report
+          assert "via suno" in report.lower(), report
+          assert "Music draft from Suno." in report, report
           PY
