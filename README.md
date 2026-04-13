@@ -8,6 +8,20 @@ upstream asset provenance from tools such as Midjourney and Suno, checks the res
 renders a shareable markdown report for review or debugging.
 The repo covers the browser publishing workflow and run report, not media generation.
 
+## Proof
+
+```md
+# OpenClaw YouTube Publish Report
+
+- Browser profile: [redacted-browser-profile]
+- Overall status: **passed**
+
+## Asset Provenance
+
+- Public credits required: yes
+- Attribution text: Music draft from Suno.
+```
+
 ## Quick Start
 
 ```bash
