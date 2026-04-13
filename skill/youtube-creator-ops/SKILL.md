@@ -22,11 +22,6 @@ of the run:
 This skill is for YouTube Studio publishing through OpenClaw.
 It assumes the browser profile is already authenticated.
 
-## Public Example URL
-
-- Related short example: https://www.youtube.com/shorts/_5dVaQdB1lA
-- Use it as a reference for the final public URL shape. The repo does not claim to generate the video asset itself.
-
 ## Use This Skill When
 
 - the user wants to publish a YouTube Short through OpenClaw

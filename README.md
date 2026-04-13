@@ -6,10 +6,7 @@ OpenClaw YouTube Publisher is a public OpenClaw skill for repeatable YouTube Stu
 creates a machine-readable run manifest, records upload and publish steps, tracks structured
 upstream asset provenance from tools such as Midjourney and Suno, checks the resulting bundle, and
 renders a shareable markdown report for review or debugging.
-
-## Reference Short URL
-
-- [Reference short from adjacent pipeline](https://www.youtube.com/shorts/_5dVaQdB1lA). This repo covers the browser publishing workflow and run report, not media generation.
+The repo covers the browser publishing workflow and run report, not media generation.
 
 ## Quick Start
 
