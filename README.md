@@ -92,4 +92,4 @@ python3 skill/youtube-creator-ops/scripts/render_youtube_creator_report.py \
 
 ## License
 
-MIT
+MIT No Attribution (MIT-0)
